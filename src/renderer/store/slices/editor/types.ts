@@ -207,6 +207,20 @@ const editorModelSchema = z.discriminatedUnion('type', [
       cursorPosition: cursorPositionSchema.optional(),
       scrollPosition: scrollPositionSchema.optional(),
     }),
+
+  z
+    .object({
+      type: z.literal('plc-ethercat-device'),
+      meta: z.object({
+        name: z.string(),
+        busName: z.string(),
+        deviceId: z.string(),
+      }),
+    })
+    .extend({
+      cursorPosition: cursorPositionSchema.optional(),
+      scrollPosition: scrollPositionSchema.optional(),
+    }),
 ])
 
 /** This is a zod schema for the editor slice state.

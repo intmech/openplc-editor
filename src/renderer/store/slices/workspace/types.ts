@@ -16,7 +16,17 @@ const plcFiltersSchema = z.object({
 type PlcFilters = z.infer<typeof plcFiltersSchema>
 
 const workspaceProjectTreeLeafSchema = z
-  .enum(['function', 'function-block', 'program', 'data-type', 'device', 'resource', 'server', 'remote-device'])
+  .enum([
+    'function',
+    'function-block',
+    'program',
+    'data-type',
+    'device',
+    'resource',
+    'server',
+    'remote-device',
+    'ethercat-device',
+  ])
   .nullable()
 type WorkspaceProjectTreeLeafType = z.infer<typeof workspaceProjectTreeLeafSchema>
 

@@ -151,6 +151,18 @@ const CreateRemoteDeviceEditor = (
   return editor
 }
 
+const CreateEtherCATDeviceEditor = (name: string, busName: string, deviceId: string): EditorModel => {
+  const editor = CreateEditorObject({
+    type: 'plc-ethercat-device',
+    meta: {
+      name,
+      busName,
+      deviceId,
+    },
+  })
+  return editor
+}
+
 const CreateEditorObjectFromTab = (tab: TabsProps): EditorModel => {
   const { elementType, name } = tab
   switch (elementType.type) {
@@ -170,6 +182,8 @@ const CreateEditorObjectFromTab = (tab: TabsProps): EditorModel => {
       return CreateServerEditor(name, elementType.protocol)
     case 'remote-device':
       return CreateRemoteDeviceEditor(name, elementType.protocol)
+    case 'ethercat-device':
+      return CreateEtherCATDeviceEditor(name, elementType.busName, elementType.deviceId)
   }
 }
 

@@ -1,4 +1,9 @@
-import { ProjectTreeBranch, ProjectTreeLeaf, ProjectTreeRoot } from '@components/_molecules/project-tree'
+import {
+  ProjectTreeBranch,
+  ProjectTreeExpandableLeaf,
+  ProjectTreeLeaf,
+  ProjectTreeRoot,
+} from '@components/_molecules/project-tree'
 import { FolderIcon } from '@root/renderer/assets'
 import { useOpenPLCStore } from '@root/renderer/store'
 import { TabsProps } from '@root/renderer/store/slices'
@@ -264,21 +269,55 @@ const Project = () => {
           <ProjectTreeBranch branchTarget='remote-device'>
             {[...(remoteDevices || [])]
               .sort((a, b) => a.name.localeCompare(b.name))
-              .map((device) => (
-                <ProjectTreeLeaf
-                  key={device.name}
-                  leafLang='remoteDevice'
-                  leafType='remote-device'
-                  label={searchQuery ? extractSearchQuery(device.name, searchQuery) : device.name}
-                  onClick={() =>
-                    handleCreateTab({
-                      name: device.name,
-                      path: `/devices/remote/${device.name}.json`,
-                      elementType: { type: 'remote-device', protocol: device.protocol },
-                    })
-                  }
-                />
-              ))}
+              .map((device) =>
+                device.protocol === 'ethercat' ? (
+                  <ProjectTreeExpandableLeaf
+                    key={device.name}
+                    leafLang='remoteDevice'
+                    leafType='remote-device'
+                    label={searchQuery ? extractSearchQuery(device.name, searchQuery) : device.name}
+                    onClick={() =>
+                      handleCreateTab({
+                        name: device.name,
+                        path: `/devices/remote/${device.name}.json`,
+                        elementType: { type: 'remote-device', protocol: device.protocol },
+                      })
+                    }
+                  >
+                    {device.ethercatConfig?.devices?.map((child) => (
+                      <ProjectTreeLeaf
+                        key={child.id}
+                        leafLang='ethercatDevice'
+                        leafType='ethercat-device'
+                        busName={device.name}
+                        deviceId={child.id}
+                        label={searchQuery ? extractSearchQuery(child.name, searchQuery) : child.name}
+                        onClick={() =>
+                          handleCreateTab({
+                            name: child.name,
+                            path: `/devices/remote/${device.name}/devices/${child.id}`,
+                            elementType: { type: 'ethercat-device', busName: device.name, deviceId: child.id },
+                          })
+                        }
+                      />
+                    ))}
+                  </ProjectTreeExpandableLeaf>
+                ) : (
+                  <ProjectTreeLeaf
+                    key={device.name}
+                    leafLang='remoteDevice'
+                    leafType='remote-device'
+                    label={searchQuery ? extractSearchQuery(device.name, searchQuery) : device.name}
+                    onClick={() =>
+                      handleCreateTab({
+                        name: device.name,
+                        path: `/devices/remote/${device.name}.json`,
+                        elementType: { type: 'remote-device', protocol: device.protocol },
+                      })
+                    }
+                  />
+                ),
+              )}
           </ProjectTreeBranch>
         </ProjectTreeRoot>
       </div>

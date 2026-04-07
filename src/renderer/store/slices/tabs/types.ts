@@ -36,6 +36,11 @@ const tabsPropsSchema = z.object({
       type: z.literal('remote-device'),
       protocol: z.enum(['modbus-tcp', 'ethernet-ip', 'ethercat', 'profinet']),
     }),
+    z.object({
+      type: z.literal('ethercat-device'),
+      busName: z.string(),
+      deviceId: z.string(),
+    }),
   ]),
   configuration: z.object({}).optional(),
 })

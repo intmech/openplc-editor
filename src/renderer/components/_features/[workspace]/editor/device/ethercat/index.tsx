@@ -3,13 +3,8 @@ import { useOpenPLCStore } from '@root/renderer/store'
 import type { EtherCATDevice, NetworkInterface } from '@root/types/ethercat'
 import type {
   ConfiguredEtherCATDevice,
-  ESIDeviceRef,
-  ESIDeviceSummary,
   ESIRepositoryItemLight,
-  EtherCATChannelMapping,
-  EtherCATSlaveConfig,
   ScannedDeviceMatch,
-  SDOConfigurationEntry,
 } from '@root/types/ethercat/esi-types'
 import type { EtherCATMasterConfig } from '@root/types/PLC/open-plc'
 import { cn } from '@root/utils'
@@ -19,11 +14,11 @@ import { enrichDeviceData } from '@root/utils/ethercat/enrich-device-data'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
 
-import { DevicesTab } from './components/devices-tab'
-import { DiagnosticsTab } from './components/diagnostics-tab'
-import { GlobalSettingsTab } from './components/global-settings-tab'
+import { AdvancedTab } from './components/advanced-tab'
+import { RepositoryTab } from './components/repository-tab'
+import { ScanBusTab } from './components/scan-bus-tab'
 
-type EditorTab = 'global-settings' | 'diagnostics' | 'devices'
+type EditorTab = 'scan-bus' | 'repository' | 'advanced'
 
 const TabItem = ({
   value,
@@ -53,15 +48,18 @@ const TabItem = ({
 )
 
 /**
- * EtherCAT Device Editor
+ * EtherCAT Bus Editor
  *
  * Three-tab layout:
- * - Global Settings: Master configuration (network interface, cycle time, watchdog)
- * - Diagnostics: Runtime status monitoring and device discovery/scanning
- * - Devices: ESI repository management and configured device editing
+ * - Scan Bus: Network interface selection and device discovery/scanning
+ * - Repository: ESI file repository management
+ * - Advanced: Master configuration (enable plugin, cycle time, watchdog)
+ *
+ * Individual device configuration (I/O mapping, SDO, etc.) is handled by
+ * EtherCATDeviceEditor, opened from the project tree.
  */
 const EtherCATEditor = () => {
-  const { editor, runtimeConnection, project, projectActions } = useOpenPLCStore()
+  const { editor, runtimeConnection, project, projectActions, workspaceActions } = useOpenPLCStore()
 
   const deviceName = editor.type === 'plc-remote-device' ? editor.meta.name : ''
   const projectPath = project.meta.path
@@ -71,7 +69,7 @@ const EtherCATEditor = () => {
   const isConnectedToRuntime = connectionStatus === 'connected' && ipAddress !== null && jwtToken !== null
 
   // Tab state
-  const [activeTab, setActiveTab] = useState<EditorTab>('devices')
+  const [activeTab, setActiveTab] = useState<EditorTab>('scan-bus')
 
   // Repository state
   const [repository, setRepository] = useState<ESIRepositoryItemLight[]>([])
@@ -89,30 +87,6 @@ const EtherCATEditor = () => {
     return (remoteDevice?.ethercatConfig?.devices ?? []) as ConfiguredEtherCATDevice[]
   }, [remoteDevice])
 
-  // Collect all IEC addresses used across all remote devices (Modbus + EtherCAT)
-  const usedAddresses = useMemo(() => {
-    const addresses = new Set<string>()
-    const allRemoteDevices = project.data.remoteDevices || []
-
-    for (const rd of allRemoteDevices) {
-      if (rd.modbusTcpConfig?.ioGroups) {
-        for (const group of rd.modbusTcpConfig.ioGroups) {
-          for (const point of group.ioPoints) {
-            addresses.add(point.iecLocation)
-          }
-        }
-      }
-      if (rd.ethercatConfig?.devices) {
-        for (const dev of rd.ethercatConfig.devices) {
-          for (const mapping of dev.channelMappings) {
-            addresses.add(mapping.iecLocation)
-          }
-        }
-      }
-    }
-    return addresses
-  }, [project.data.remoteDevices])
-
   const masterConfig = useMemo(() => {
     return (
       remoteDevice?.ethercatConfig?.masterConfig ?? {
@@ -126,8 +100,9 @@ const EtherCATEditor = () => {
   const syncDevicesToStore = useCallback(
     (devices: ConfiguredEtherCATDevice[]) => {
       projectActions.updateEthercatConfig(deviceName, { masterConfig, devices })
+      workspaceActions.setEditingState('unsaved')
     },
-    [deviceName, projectActions, masterConfig],
+    [deviceName, projectActions, masterConfig, workspaceActions],
   )
 
   const handleUpdateMasterConfig = useCallback(
@@ -137,13 +112,21 @@ const EtherCATEditor = () => {
         masterConfig: newMasterConfig,
         devices: configuredDevices,
       })
+      workspaceActions.setEditingState('unsaved')
     },
-    [deviceName, projectActions, masterConfig, configuredDevices],
+    [deviceName, projectActions, masterConfig, configuredDevices, workspaceActions],
   )
 
   // Network interfaces state
   const [interfaces, setInterfaces] = useState<NetworkInterface[]>([])
-  const [selectedInterface, setSelectedInterface] = useState<string>('')
+  const [selectedInterface, _setSelectedInterface] = useState<string>('')
+  const setSelectedInterface = useCallback(
+    (value: string) => {
+      _setSelectedInterface(value)
+      handleUpdateMasterConfig({ networkInterface: value })
+    },
+    [handleUpdateMasterConfig],
+  )
   const [isLoadingInterfaces, setIsLoadingInterfaces] = useState(false)
   const [interfaceError, setInterfaceError] = useState<string | null>(null)
 
@@ -209,7 +192,11 @@ const EtherCATEditor = () => {
         setInterfaces(fetchedInterfaces)
         const names = new Set(fetchedInterfaces.map((i) => i.name))
         if (fetchedInterfaces.length > 0) {
-          setSelectedInterface((prev) => (prev && names.has(prev) ? prev : fetchedInterfaces[0].name))
+          _setSelectedInterface((prev) => {
+            const next = prev && names.has(prev) ? prev : fetchedInterfaces[0].name
+            handleUpdateMasterConfig({ networkInterface: next })
+            return next
+          })
         } else {
           setSelectedInterface('')
         }
@@ -411,74 +398,8 @@ const EtherCATEditor = () => {
     if (newDevices.length > 0) {
       syncDevicesToStore([...configuredDevices, ...newDevices])
       setSelectedScannedDevices(new Set())
-      setActiveTab('devices')
     }
   }, [selectedScannedDevices, deviceMatches, repository, configuredDevices, syncDevicesToStore, projectPath])
-
-  // Device management handlers
-  const handleAddDeviceFromBrowser = useCallback(
-    async (ref: ESIDeviceRef, device: ESIDeviceSummary, repoItem: ESIRepositoryItemLight) => {
-      let enriched = {}
-      const result = await window.bridge.esiLoadDeviceFull(projectPath, ref.repositoryItemId, ref.deviceIndex)
-      if (result.success && result.device) {
-        enriched = enrichDeviceData(result.device)
-      }
-
-      const nextPosition =
-        configuredDevices.length > 0 ? Math.max(...configuredDevices.map((d) => d.position ?? -1)) + 1 : 0
-
-      const newDevice: ConfiguredEtherCATDevice = {
-        id: uuidv4(),
-        position: nextPosition,
-        name: device.name,
-        esiDeviceRef: ref,
-        vendorId: repoItem.vendor.id,
-        productCode: device.type.productCode,
-        revisionNo: device.type.revisionNo,
-        addedFrom: 'repository',
-        config: createDefaultSlaveConfig(),
-        channelMappings: [],
-        ...enriched,
-      }
-      syncDevicesToStore([...configuredDevices, newDevice])
-    },
-    [configuredDevices, syncDevicesToStore, projectPath],
-  )
-
-  const handleRemoveDevice = useCallback(
-    (deviceId: string) => {
-      syncDevicesToStore(configuredDevices.filter((d) => d.id !== deviceId))
-    },
-    [configuredDevices, syncDevicesToStore],
-  )
-
-  const handleUpdateDevice = useCallback(
-    (deviceId: string, config: EtherCATSlaveConfig) => {
-      syncDevicesToStore(configuredDevices.map((d) => (d.id === deviceId ? { ...d, config } : d)))
-    },
-    [configuredDevices, syncDevicesToStore],
-  )
-
-  const handleUpdateChannelMappings = useCallback(
-    (deviceId: string, channelMappings: EtherCATChannelMapping[]) => {
-      syncDevicesToStore(configuredDevices.map((d) => (d.id === deviceId ? { ...d, channelMappings } : d)))
-    },
-    [configuredDevices, syncDevicesToStore],
-  )
-
-  const handleEnrichDevice = useCallback(
-    (deviceId: string, data: Partial<ConfiguredEtherCATDevice>) => {
-      syncDevicesToStore(configuredDevices.map((d) => (d.id === deviceId ? { ...d, ...data } : d)))
-    },
-    [configuredDevices, syncDevicesToStore],
-  )
-
-  const handleUpdateSdoConfigurations = useCallback(
-    (deviceId: string, sdoConfigurations: SDOConfigurationEntry[]) => {
-      syncDevicesToStore(configuredDevices.map((d) => (d.id === deviceId ? { ...d, sdoConfigurations } : d)))
-    },
-    [configuredDevices, syncDevicesToStore],
-  )
 
   const handleRetryRepository = useCallback(() => {
     setRepositoryError(null)
@@ -490,8 +411,8 @@ const EtherCATEditor = () => {
     <div aria-label='EtherCAT editor container' className='flex h-full w-full flex-col overflow-hidden p-4'>
       {/* Header */}
       <div className='mb-4 shrink-0'>
-        <h2 className='text-lg font-semibold text-neutral-1000 dark:text-neutral-100'>EtherCAT Device: {deviceName}</h2>
-        <p className='text-sm text-neutral-600 dark:text-neutral-400'>Protocol: EtherCAT</p>
+        <h2 className='text-lg font-semibold text-neutral-1000 dark:text-neutral-100'>EtherCAT Bus: {deviceName}</h2>
+        <p className='text-sm text-neutral-600 dark:text-neutral-400'>EtherCAT Master Configuration</p>
       </div>
 
       {/* Tabs */}
@@ -501,11 +422,10 @@ const EtherCATEditor = () => {
         className='flex min-h-0 flex-1 flex-col overflow-hidden'
       >
         <Tabs.List className='flex shrink-0 border-b border-neutral-200 dark:border-neutral-700'>
-          <TabItem value='global-settings' label='Global Settings' isActive={activeTab === 'global-settings'} />
           <TabItem
-            value='diagnostics'
-            label='Diagnostics'
-            isActive={activeTab === 'diagnostics'}
+            value='scan-bus'
+            label='Scan Bus'
+            isActive={activeTab === 'scan-bus'}
             badge={
               scannedDevices.length > 0 ? (
                 <span className='ml-1 rounded-full bg-neutral-200 px-1.5 py-0.5 text-[10px] dark:bg-neutral-700'>
@@ -515,43 +435,27 @@ const EtherCATEditor = () => {
             }
           />
           <TabItem
-            value='devices'
-            label='Devices'
-            isActive={activeTab === 'devices'}
+            value='repository'
+            label='Repository'
+            isActive={activeTab === 'repository'}
             badge={
-              configuredDevices.length > 0 ? (
-                <span className='bg-brand/20 ml-1 rounded-full px-1.5 py-0.5 text-[10px] text-brand'>
-                  {configuredDevices.length}
+              repository.length > 0 ? (
+                <span className='ml-1 rounded-full bg-neutral-200 px-1.5 py-0.5 text-[10px] dark:bg-neutral-700'>
+                  {repository.length}
                 </span>
               ) : undefined
             }
           />
+          <TabItem value='advanced' label='Advanced' isActive={activeTab === 'advanced'} />
         </Tabs.List>
 
-        {/* Global Settings Tab */}
+        {/* Scan Bus Tab */}
         <Tabs.Content
-          value='global-settings'
+          value='scan-bus'
           className='flex min-h-0 flex-1 flex-col overflow-hidden pt-4 data-[state=inactive]:hidden'
         >
-          <GlobalSettingsTab
-            masterConfig={masterConfig}
-            onUpdateMasterConfig={handleUpdateMasterConfig}
+          <ScanBusTab
             isConnectedToRuntime={isConnectedToRuntime}
-            interfaces={interfaces}
-            isLoadingInterfaces={isLoadingInterfaces}
-            onRefreshInterfaces={() => void fetchInterfaces()}
-          />
-        </Tabs.Content>
-
-        {/* Diagnostics Tab */}
-        <Tabs.Content
-          value='diagnostics'
-          className='flex min-h-0 flex-1 flex-col overflow-hidden pt-4 data-[state=inactive]:hidden'
-        >
-          <DiagnosticsTab
-            isConnectedToRuntime={isConnectedToRuntime}
-            ipAddress={ipAddress}
-            jwtToken={jwtToken}
             serviceAvailable={serviceAvailable}
             serviceMessage={serviceMessage}
             interfaces={interfaces}
@@ -575,27 +479,27 @@ const EtherCATEditor = () => {
           />
         </Tabs.Content>
 
-        {/* Devices Tab */}
+        {/* Repository Tab */}
         <Tabs.Content
-          value='devices'
+          value='repository'
           className='flex min-h-0 flex-1 flex-col overflow-hidden pt-4 data-[state=inactive]:hidden'
         >
-          <DevicesTab
-            devices={configuredDevices}
+          <RepositoryTab
             repository={repository}
             onRepositoryChange={setRepository}
             projectPath={projectPath}
             isLoadingRepository={isLoadingRepository}
             repositoryError={repositoryError}
             onRetryRepository={handleRetryRepository}
-            usedAddresses={usedAddresses}
-            onAddDeviceFromBrowser={handleAddDeviceFromBrowser}
-            onRemoveDevice={handleRemoveDevice}
-            onUpdateDevice={handleUpdateDevice}
-            onUpdateChannelMappings={handleUpdateChannelMappings}
-            onEnrichDevice={handleEnrichDevice}
-            onUpdateSdoConfigurations={handleUpdateSdoConfigurations}
           />
+        </Tabs.Content>
+
+        {/* Advanced Tab */}
+        <Tabs.Content
+          value='advanced'
+          className='flex min-h-0 flex-1 flex-col overflow-hidden pt-4 data-[state=inactive]:hidden'
+        >
+          <AdvancedTab masterConfig={masterConfig} onUpdateMasterConfig={handleUpdateMasterConfig} />
         </Tabs.Content>
       </Tabs.Root>
     </div>

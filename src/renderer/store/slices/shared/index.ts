@@ -95,6 +95,12 @@ export type SharedSlice = {
     delete: (data: DeleteRemoteDevice) => Promise<BasicSharedSliceResponse>
     rename: (remoteDeviceName: string, newRemoteDeviceName: string) => Promise<BasicSharedSliceResponse>
   }
+  ethercatDeviceActions: {
+    /** Delete an EtherCAT slave device from its parent bus */
+    delete: (busName: string, deviceId: string, deviceName: string) => void
+    /** Rename an EtherCAT slave device */
+    rename: (busName: string, deviceId: string, newName: string) => Promise<BasicSharedSliceResponse>
+  }
   sharedWorkspaceActions: {
     // Clear all states when closing a project
     clearStatesOnCloseProject: () => void
@@ -1041,6 +1047,7 @@ export const createSharedSlice: StateCreator<
     },
 
     delete: async (data) => {
+      await Promise.resolve()
       const deleteResult = getState().projectActions.deleteRemoteDevice(data.file)
       if (!deleteResult.ok) {
         return {
@@ -1052,8 +1059,19 @@ export const createSharedSlice: StateCreator<
         }
       }
 
-      getState().tabsActions.removeTab(data.file)
-      getState().editorActions.removeModel(data.file)
+      // Cascade: close all child EtherCAT device tabs belonging to this bus
+      const allTabs = getState().tabs
+      const childTabs = allTabs.filter(
+        (t) =>
+          t.elementType.type === 'ethercat-device' && 'busName' in t.elementType && t.elementType.busName === data.file,
+      )
+      for (const childTab of childTabs) {
+        getState().tabsActions.removeTab(childTab.name)
+        getState().editorActions.removeModel(childTab.name)
+      }
+
+      // Use forceCloseFile to properly select the next tab and reset editor state
+      getState().sharedWorkspaceActions.forceCloseFile(data.file)
 
       const selectedProjectTreeLeaf = getState().workspace.selectedProjectTreeLeaf
       if (selectedProjectTreeLeaf.label === data.file) {
@@ -1063,9 +1081,9 @@ export const createSharedSlice: StateCreator<
         })
       }
 
-      const saveResult = await getState().sharedWorkspaceActions.saveFile(data.file)
       getState().fileActions.removeFile({ name: data.file })
-      return saveResult
+      getState().workspaceActions.setEditingState('unsaved')
+      return { success: true }
     },
 
     rename: (remoteDeviceName, newRemoteDeviceName) => {
@@ -1121,6 +1139,19 @@ export const createSharedSlice: StateCreator<
       getState().tabsActions.updateTabName(remoteDeviceName, newRemoteDeviceName)
       getState().editorActions.updateEditorName(remoteDeviceName, newRemoteDeviceName)
 
+      // Cascade: close child EtherCAT device tabs (busName is now stale)
+      const allTabs = getState().tabs
+      const childTabs = allTabs.filter(
+        (t) =>
+          t.elementType.type === 'ethercat-device' &&
+          'busName' in t.elementType &&
+          t.elementType.busName === remoteDeviceName,
+      )
+      for (const childTab of childTabs) {
+        getState().tabsActions.removeTab(childTab.name)
+        getState().editorActions.removeModel(childTab.name)
+      }
+
       const selectedProjectTreeLeaf = getState().workspace.selectedProjectTreeLeaf
       if (selectedProjectTreeLeaf.label === remoteDeviceName) {
         getState().workspaceActions.setSelectedProjectTreeLeaf({
@@ -1130,6 +1161,59 @@ export const createSharedSlice: StateCreator<
       }
 
       // Mark workspace as unsaved - remote devices are saved with project.json
+      getState().workspaceActions.setEditingState('unsaved')
+      return Promise.resolve({ success: true })
+    },
+  },
+
+  ethercatDeviceActions: {
+    delete: (busName, deviceId, deviceName) => {
+      const remoteDevice = getState().project.data.remoteDevices?.find((d) => d.name === busName)
+      if (!remoteDevice?.ethercatConfig) return
+
+      const devices = remoteDevice.ethercatConfig.devices.filter((d) => d.id !== deviceId)
+      const masterConfig = remoteDevice.ethercatConfig.masterConfig ?? {
+        networkInterface: 'eth0',
+        cycleTimeUs: 1000,
+        watchdogTimeoutCycles: 3,
+      }
+      getState().projectActions.updateEthercatConfig(busName, { masterConfig, devices })
+
+      // Close the device tab if open (forceCloseFile handles next-tab selection)
+      const tabExists = getState().tabs.some((t) => t.name === deviceName)
+      if (tabExists) {
+        getState().sharedWorkspaceActions.forceCloseFile(deviceName)
+      }
+
+      const selectedProjectTreeLeaf = getState().workspace.selectedProjectTreeLeaf
+      if (selectedProjectTreeLeaf.label === deviceName) {
+        getState().workspaceActions.setSelectedProjectTreeLeaf({ label: '', type: null })
+      }
+
+      getState().workspaceActions.setEditingState('unsaved')
+    },
+
+    rename: (busName, deviceId, newName) => {
+      const remoteDevice = getState().project.data.remoteDevices?.find((d) => d.name === busName)
+      if (!remoteDevice?.ethercatConfig) {
+        return Promise.resolve({ success: false })
+      }
+
+      const devices = remoteDevice.ethercatConfig.devices.map((d) => (d.id === deviceId ? { ...d, name: newName } : d))
+      const masterConfig = remoteDevice.ethercatConfig.masterConfig ?? {
+        networkInterface: 'eth0',
+        cycleTimeUs: 1000,
+        watchdogTimeoutCycles: 3,
+      }
+      getState().projectActions.updateEthercatConfig(busName, { masterConfig, devices })
+
+      // Close the device tab (stale name) — user can reopen from tree
+      const oldDevice = remoteDevice.ethercatConfig.devices.find((d) => d.id === deviceId)
+      if (oldDevice) {
+        getState().tabsActions.removeTab(oldDevice.name)
+        getState().editorActions.removeModel(oldDevice.name)
+      }
+
       getState().workspaceActions.setEditingState('unsaved')
       return Promise.resolve({ success: true })
     },
@@ -1814,6 +1898,13 @@ export const createSharedSlice: StateCreator<
       return { success: true }
     },
     closeFile: (name) => {
+      // EtherCAT device tabs are persisted via Zustand store (project.json),
+      // not via the file tracking system, so close them directly.
+      const tab = getState().tabs.find((t) => t.name === name)
+      if (tab?.elementType.type === 'ethercat-device') {
+        return getState().sharedWorkspaceActions.forceCloseFile(name)
+      }
+
       // Check if file has unsaved changes
       const isSaved = getState().fileActions.getSavedState({ name })
 

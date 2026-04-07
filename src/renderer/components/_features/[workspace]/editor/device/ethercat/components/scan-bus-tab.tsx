@@ -5,14 +5,9 @@ import { cn } from '@root/utils'
 
 import { DiscoveredDeviceTable } from './discovered-device-table'
 import { InterfaceSelector } from './interface-selector'
-import { RuntimeStatusPanel } from './runtime-status-panel'
 
-type DiagnosticsTabProps = {
+type ScanBusTabProps = {
   isConnectedToRuntime: boolean
-  ipAddress: string | null
-  jwtToken: string | null
-  /** Master name to filter status from multi-master response */
-  masterName?: string
   // Service status
   serviceAvailable: boolean | null
   serviceMessage: string
@@ -40,11 +35,8 @@ type DiagnosticsTabProps = {
   onAddSelectedFromScan: () => void
 }
 
-const DiagnosticsTab = ({
+const ScanBusTab = ({
   isConnectedToRuntime,
-  ipAddress,
-  jwtToken,
-  masterName,
   serviceAvailable,
   serviceMessage,
   interfaces,
@@ -64,19 +56,9 @@ const DiagnosticsTab = ({
   onSelectScannedDevice,
   onSelectAllScanned,
   onAddSelectedFromScan,
-}: DiagnosticsTabProps) => {
+}: ScanBusTabProps) => {
   return (
     <div className='flex flex-1 flex-col gap-4 overflow-hidden'>
-      {/* Runtime Status */}
-      {isConnectedToRuntime && ipAddress && jwtToken && (
-        <RuntimeStatusPanel
-          ipAddress={ipAddress}
-          jwtToken={jwtToken}
-          isConnected={isConnectedToRuntime}
-          masterName={masterName}
-        />
-      )}
-
       {/* Not connected state */}
       {!isConnectedToRuntime && (
         <div className='flex flex-1 items-center justify-center rounded-lg border border-dashed border-neutral-300 dark:border-neutral-700'>
@@ -184,4 +166,4 @@ const DiagnosticsTab = ({
   )
 }
 
-export { DiagnosticsTab }
+export { ScanBusTab }

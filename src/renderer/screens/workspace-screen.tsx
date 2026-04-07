@@ -22,6 +22,7 @@ import { ExitIcon } from '../assets'
 import { DataTypeEditor, MonacoEditor } from '../components/_features/[workspace]/editor'
 import { DeviceEditor } from '../components/_features/[workspace]/editor/device'
 import { EtherCATEditor } from '../components/_features/[workspace]/editor/device/ethercat'
+import { EtherCATDeviceEditor } from '../components/_features/[workspace]/editor/device/ethercat/ethercat-device-editor'
 import { RemoteDeviceEditor } from '../components/_features/[workspace]/editor/device/remote-device'
 import { GraphicalEditor } from '../components/_features/[workspace]/editor/graphical'
 import { ResourcesEditor } from '../components/_features/[workspace]/editor/resource-editor'
@@ -1834,6 +1835,7 @@ const WorkspaceScreen = () => {
                       {editor['type'] === 'plc-remote-device' && editor.meta.protocol !== 'ethercat' && (
                         <RemoteDeviceEditor />
                       )}
+                      {editor['type'] === 'plc-ethercat-device' && <EtherCATDeviceEditor key={editor.meta.deviceId} />}
                       {(editor['type'] === 'plc-textual' || editor['type'] === 'plc-graphical') && (
                         <ResizablePanelGroup
                           id='editorContentPanelGroup'

@@ -136,6 +136,11 @@ const CreateEditorObject = (props: EditorModel): EditorModel => {
         type,
         meta,
       }
+    case 'plc-ethercat-device':
+      return {
+        type,
+        meta,
+      }
     default:
       return {
         type: 'available',
