@@ -424,7 +424,7 @@ const EtherCATEditor = () => {
         <Tabs.List className='flex shrink-0 border-b border-neutral-200 dark:border-neutral-700'>
           <TabItem
             value='scan-bus'
-            label='Scan Bus'
+            label='Network'
             isActive={activeTab === 'scan-bus'}
             badge={
               scannedDevices.length > 0 ? (
