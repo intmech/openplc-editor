@@ -323,8 +323,8 @@ class MainProcessBridge implements MainIpcModule {
                 try {
                   const parsedData = responseParser(data)
                   resolve({ success: true, data: parsedData })
-                } catch {
-                  resolve({ success: false, error: 'Invalid response format' })
+                } catch (err) {
+                  resolve({ success: false, error: err instanceof Error ? err.message : 'Invalid response format' })
                 }
               } else {
                 resolve({ success: true })
@@ -354,8 +354,11 @@ class MainProcessBridge implements MainIpcModule {
                             try {
                               const parsedData = responseParser(retryData)
                               resolve({ success: true, data: parsedData })
-                            } catch {
-                              resolve({ success: false, error: 'Invalid response format' })
+                            } catch (err) {
+                              resolve({
+                                success: false,
+                                error: err instanceof Error ? err.message : 'Invalid response format',
+                              })
                             }
                           } else {
                             resolve({ success: true })
@@ -431,8 +434,8 @@ class MainProcessBridge implements MainIpcModule {
               if (res.statusCode === 200) {
                 try {
                   resolve({ success: true, data: responseParser(data) })
-                } catch {
-                  resolve({ success: false, error: 'Invalid response format' })
+                } catch (err) {
+                  resolve({ success: false, error: err instanceof Error ? err.message : 'Invalid response format' })
                 }
               } else {
                 resolve({ success: false, error: data || `Unexpected status: ${res.statusCode}` })
