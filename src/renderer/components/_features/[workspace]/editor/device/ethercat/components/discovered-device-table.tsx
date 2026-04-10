@@ -49,13 +49,12 @@ const DiscoveredDeviceTable = ({
             <th className='px-2 py-2 text-left text-xs font-medium text-neutral-700 dark:text-neutral-300'>Name</th>
             <th className='px-2 py-2 text-left text-xs font-medium text-neutral-700 dark:text-neutral-300'>Vendor</th>
             <th className='px-2 py-2 text-left text-xs font-medium text-neutral-700 dark:text-neutral-300'>Product</th>
-            <th className='px-2 py-2 text-left text-xs font-medium text-neutral-700 dark:text-neutral-300'>I/O</th>
           </tr>
         </thead>
         <tbody>
           {deviceMatches.length === 0 ? (
             <tr>
-              <td colSpan={6} className='px-4 py-8 text-center text-sm text-neutral-500 dark:text-neutral-400'>
+              <td colSpan={5} className='px-4 py-8 text-center text-sm text-neutral-500 dark:text-neutral-400'>
                 {isScanning
                   ? 'Scanning for devices...'
                   : 'No devices found. Click "Scan" to discover EtherCAT devices on the network.'}
@@ -102,9 +101,6 @@ const DiscoveredDeviceTable = ({
                   </td>
                   <td className='px-2 py-2 font-mono text-xs text-neutral-600 dark:text-neutral-400'>
                     0x{dm.device.product_code.toString(16).padStart(8, '0').toUpperCase()}
-                  </td>
-                  <td className='px-2 py-2 text-xs text-neutral-600 dark:text-neutral-400'>
-                    {dm.device.input_bytes}B / {dm.device.output_bytes}B
                   </td>
                 </tr>
               )

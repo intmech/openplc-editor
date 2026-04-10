@@ -208,21 +208,22 @@ const ScanBusTab = ({
                       Name
                     </th>
                     <th className='px-2 py-2 text-left text-xs font-medium text-neutral-700 dark:text-neutral-300'>
-                      Type
+                      Vendor
+                    </th>
+                    <th className='px-2 py-2 text-left text-xs font-medium text-neutral-700 dark:text-neutral-300'>
+                      Product
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {configuredDevices.length === 0 ? (
                     <tr>
-                      <td colSpan={3} className='px-4 py-8 text-center text-sm text-neutral-500 dark:text-neutral-400'>
+                      <td colSpan={4} className='px-4 py-8 text-center text-sm text-neutral-500 dark:text-neutral-400'>
                         No devices configured. Click + to add a device from the repository.
                       </td>
                     </tr>
                   ) : (
                     configuredDevices.map((device) => {
-                      const repoItem = repository.find((r) => r.id === device.esiDeviceRef.repositoryItemId)
-                      const esiDevice = repoItem?.devices[device.esiDeviceRef.deviceIndex]
                       const isActive = device.id === selectedDeviceId
 
                       return (
@@ -242,8 +243,11 @@ const ScanBusTab = ({
                           <td className='whitespace-nowrap px-2 py-2 text-sm font-medium text-neutral-950 dark:text-neutral-100'>
                             {device.name}
                           </td>
-                          <td className='px-2 py-2 text-xs text-neutral-600 dark:text-neutral-400'>
-                            {esiDevice?.name || 'Unknown'}
+                          <td className='px-2 py-2 font-mono text-xs text-neutral-600 dark:text-neutral-400'>
+                            0x{parseInt(device.vendorId, 16).toString(16).padStart(4, '0').toUpperCase()}
+                          </td>
+                          <td className='px-2 py-2 font-mono text-xs text-neutral-600 dark:text-neutral-400'>
+                            0x{parseInt(device.productCode, 16).toString(16).padStart(8, '0').toUpperCase()}
                           </td>
                         </tr>
                       )
