@@ -26,7 +26,6 @@ type ScanBusTabProps = {
   onSelectInterface: (value: string) => void
   isLoadingInterfaces: boolean
   interfaceError: string | null
-  onRefreshInterfaces: () => void
   // Scan
   isScanning: boolean
   scanError: string | null
@@ -58,7 +57,6 @@ const ScanBusTab = ({
   onSelectInterface,
   isLoadingInterfaces,
   interfaceError,
-  onRefreshInterfaces,
   isScanning,
   scanError,
   scanTimeMs,
@@ -99,7 +97,6 @@ const ScanBusTab = ({
             onSelectInterface={onSelectInterface}
             isLoading={isLoadingInterfaces}
             error={interfaceError}
-            onRefresh={onRefreshInterfaces}
           />
 
           <button

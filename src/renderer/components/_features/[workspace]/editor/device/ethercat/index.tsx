@@ -521,7 +521,6 @@ const EtherCATEditor = () => {
             onSelectInterface={setSelectedInterface}
             isLoadingInterfaces={isLoadingInterfaces}
             interfaceError={interfaceError}
-            onRefreshInterfaces={() => void fetchInterfaces()}
             isScanning={isScanning}
             scanError={scanError}
             scanTimeMs={scanTimeMs}

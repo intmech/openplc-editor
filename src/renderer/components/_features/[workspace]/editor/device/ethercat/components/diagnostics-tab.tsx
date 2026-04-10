@@ -22,7 +22,6 @@ type DiagnosticsTabProps = {
   onSelectInterface: (value: string) => void
   isLoadingInterfaces: boolean
   interfaceError: string | null
-  onRefreshInterfaces: () => void
   // Scan
   isScanning: boolean
   scanError: string | null
@@ -52,7 +51,6 @@ const DiagnosticsTab = ({
   onSelectInterface,
   isLoadingInterfaces,
   interfaceError,
-  onRefreshInterfaces,
   isScanning,
   scanError,
   scanTimeMs,
@@ -112,7 +110,6 @@ const DiagnosticsTab = ({
               onSelectInterface={onSelectInterface}
               isLoading={isLoadingInterfaces}
               error={interfaceError}
-              onRefresh={onRefreshInterfaces}
             />
 
             <button

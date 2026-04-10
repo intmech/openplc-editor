@@ -12,7 +12,6 @@ type InterfaceSelectorProps = {
   onSelectInterface: (value: string) => void
   isLoading: boolean
   error: string | null
-  onRefresh: () => void
 }
 
 /**
@@ -26,7 +25,6 @@ const InterfaceSelector = ({
   onSelectInterface,
   isLoading,
   error,
-  onRefresh,
 }: InterfaceSelectorProps) => {
   const [isOpen, setIsOpen] = useState(false)
   const [inputValue, setInputValue] = useState(selectedInterface)
@@ -54,17 +52,15 @@ const InterfaceSelector = ({
     )
   }, [options, inputValue])
 
-  // Focus input and clear filter when dropdown opens so all options are visible
+  // Focus input and select all text when dropdown opens
   useEffect(() => {
     if (isOpen) {
-      setInputValue('')
       setTimeout(() => {
         inputRef.current?.focus()
+        inputRef.current?.select()
         const currentIndex = options.findIndex((opt) => opt.value === selectedInterface)
         setHighlightedIndex(currentIndex >= 0 ? currentIndex : -1)
       }, 0)
-    } else {
-      setInputValue(selectedInterface)
     }
   }, [isOpen, options, selectedInterface])
 
@@ -125,105 +121,87 @@ const InterfaceSelector = ({
   return (
     <div className='flex flex-col gap-1'>
       <Label className='text-xs text-neutral-950 dark:text-white'>Network Interface</Label>
-      <div className='flex items-center gap-2'>
-        <Popover.Root open={isOpen} onOpenChange={handleOpenChange}>
-          <Popover.Trigger asChild>
-            <button
-              type='button'
-              className='flex h-[30px] w-full min-w-[200px] max-w-[300px] items-center justify-between gap-1 rounded-md border border-neutral-300 bg-white px-2 py-1 font-caption font-medium text-neutral-850 outline-none data-[state=open]:border-brand-medium-dark dark:border-neutral-850 dark:bg-neutral-950 dark:text-neutral-300'
-            >
-              <span className='truncate text-xs font-normal text-neutral-700 dark:text-neutral-100'>
-                {selectedInterface || 'Select interface'}
-              </span>
-              <ArrowIcon size='sm' className={cn('rotate-270 stroke-brand transition-all', isOpen && 'rotate-90')} />
-            </button>
-          </Popover.Trigger>
-          <Popover.Portal>
-            <Popover.Content
-              sideOffset={5}
-              align='start'
-              className='z-50 w-[--radix-popover-trigger-width] min-w-[200px] rounded-lg border border-neutral-300 bg-white shadow-lg outline-none dark:border-brand-medium-dark dark:bg-neutral-950'
-            >
-              <div className='p-2'>
-                <InputWithRef
-                  ref={inputRef}
-                  value={inputValue}
-                  onChange={handleInputChange}
-                  onBlur={handleInputBlur}
-                  onKeyDown={handleKeyDown}
-                  placeholder='eth0'
-                  className='h-[28px] w-full rounded-md border border-neutral-200 bg-white px-2 py-1 font-caption text-cp-sm font-medium text-neutral-850 outline-none focus:border-brand-medium-dark dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300'
-                />
-              </div>
-              <div className='max-h-[200px] overflow-y-auto'>
-                {isLoading ? (
-                  <div className='flex items-center justify-center py-2 text-xs text-neutral-500'>
-                    Loading interfaces...
-                  </div>
-                ) : filteredOptions.length > 0 ? (
-                  filteredOptions.map((option, index) => (
-                    <div
-                      key={option.value}
-                      ref={(el) => (optionRefs.current[index] = el)}
-                      className={cn(
-                        'flex w-full cursor-pointer flex-col px-2 py-1 outline-none hover:bg-neutral-100 dark:hover:bg-neutral-800',
-                        (selectedInterface === option.value || highlightedIndex === index) &&
-                          'bg-neutral-100 dark:bg-neutral-800',
-                      )}
-                      onMouseEnter={() => setHighlightedIndex(index)}
-                      onClick={() => handleSelectOption(option.value)}
-                      role='option'
-                      aria-selected={highlightedIndex === index}
-                    >
-                      <span className='text-start font-caption text-xs font-normal text-neutral-700 dark:text-neutral-100'>
-                        {option.value}
+      <Popover.Root open={isOpen} onOpenChange={handleOpenChange}>
+        <Popover.Trigger asChild>
+          <button
+            type='button'
+            className='flex h-[30px] w-full min-w-[200px] max-w-[300px] items-center justify-between gap-1 rounded-md border border-neutral-300 bg-white px-2 py-1 font-caption font-medium text-neutral-850 outline-none data-[state=open]:border-brand-medium-dark dark:border-neutral-850 dark:bg-neutral-950 dark:text-neutral-300'
+          >
+            <span className='truncate text-xs font-normal text-neutral-700 dark:text-neutral-100'>
+              {selectedInterface || 'Select interface'}
+            </span>
+            <ArrowIcon size='sm' className={cn('rotate-270 stroke-brand transition-all', isOpen && 'rotate-90')} />
+          </button>
+        </Popover.Trigger>
+        <Popover.Portal>
+          <Popover.Content
+            sideOffset={5}
+            align='start'
+            className='z-50 w-[--radix-popover-trigger-width] min-w-[200px] rounded-lg border border-neutral-300 bg-white shadow-lg outline-none dark:border-brand-medium-dark dark:bg-neutral-950'
+          >
+            <div className='p-2'>
+              <InputWithRef
+                ref={inputRef}
+                value={inputValue}
+                onChange={handleInputChange}
+                onBlur={handleInputBlur}
+                onKeyDown={handleKeyDown}
+                placeholder='eth0'
+                className='h-[28px] w-full rounded-md border border-neutral-200 bg-white px-2 py-1 font-caption text-cp-sm font-medium text-neutral-850 outline-none focus:border-brand-medium-dark dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300'
+              />
+            </div>
+            <div className='max-h-[200px] overflow-y-auto'>
+              {isLoading ? (
+                <div className='flex items-center justify-center py-2 text-xs text-neutral-500'>
+                  Loading interfaces...
+                </div>
+              ) : filteredOptions.length > 0 ? (
+                filteredOptions.map((option, index) => (
+                  <div
+                    key={option.value}
+                    ref={(el) => (optionRefs.current[index] = el)}
+                    className={cn(
+                      'flex w-full cursor-pointer flex-col px-2 py-1 outline-none hover:bg-neutral-100 dark:hover:bg-neutral-800',
+                      (selectedInterface === option.value || highlightedIndex === index) &&
+                        'bg-neutral-100 dark:bg-neutral-800',
+                    )}
+                    onMouseEnter={() => setHighlightedIndex(index)}
+                    onClick={() => handleSelectOption(option.value)}
+                    role='option'
+                    aria-selected={highlightedIndex === index}
+                  >
+                    <span className='text-start font-caption text-xs font-normal text-neutral-700 dark:text-neutral-100'>
+                      {option.value}
+                    </span>
+                    {option.label !== option.value && (
+                      <span className='text-start font-caption text-[10px] font-normal text-neutral-500 dark:text-neutral-400'>
+                        {option.label}
                       </span>
-                      {option.label !== option.value && (
-                        <span className='text-start font-caption text-[10px] font-normal text-neutral-500 dark:text-neutral-400'>
-                          {option.label}
-                        </span>
-                      )}
-                    </div>
-                  ))
-                ) : (
-                  <div className='px-2 py-2 text-center text-xs text-neutral-500'>
-                    {options.length === 0
-                      ? 'No interfaces available. Type a custom value.'
-                      : 'No matches. Type a custom value.'}
+                    )}
                   </div>
-                )}
-              </div>
-              {inputValue.trim() && !filteredOptions.some((opt) => opt.value === inputValue.trim()) && (
-                <div
-                  className='flex cursor-pointer items-center gap-2 border-t border-neutral-200 px-2 py-1 hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800'
-                  onClick={() => handleSelectOption(inputValue.trim())}
-                >
-                  <PlusIcon className='h-3 w-3 stroke-brand' />
-                  <span className='font-caption text-xs font-normal text-neutral-700 dark:text-neutral-100'>
-                    Use "{inputValue.trim()}"
-                  </span>
+                ))
+              ) : (
+                <div className='px-2 py-2 text-center text-xs text-neutral-500'>
+                  {options.length === 0
+                    ? 'No interfaces available. Type a custom value.'
+                    : 'No matches. Type a custom value.'}
                 </div>
               )}
-            </Popover.Content>
-          </Popover.Portal>
-        </Popover.Root>
-
-        <button
-          onClick={onRefresh}
-          disabled={isLoading}
-          className={cn(
-            'flex h-[30px] w-[30px] items-center justify-center rounded-md border border-neutral-300 bg-white transition-colors',
-            'hover:bg-neutral-100 dark:border-neutral-850 dark:bg-neutral-950 dark:hover:bg-neutral-800',
-            'disabled:cursor-not-allowed disabled:opacity-50',
-          )}
-          title='Refresh interfaces'
-        >
-          <ArrowIcon
-            size='sm'
-            className={cn('rotate-180 stroke-brand transition-transform', isLoading && 'animate-spin')}
-          />
-        </button>
-      </div>
+            </div>
+            {inputValue.trim() && !filteredOptions.some((opt) => opt.value === inputValue.trim()) && (
+              <div
+                className='flex cursor-pointer items-center gap-2 border-t border-neutral-200 px-2 py-1 hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800'
+                onClick={() => handleSelectOption(inputValue.trim())}
+              >
+                <PlusIcon className='h-3 w-3 stroke-brand' />
+                <span className='font-caption text-xs font-normal text-neutral-700 dark:text-neutral-100'>
+                  Use "{inputValue.trim()}"
+                </span>
+              </div>
+            )}
+          </Popover.Content>
+        </Popover.Portal>
+      </Popover.Root>
 
       {error && <p className='text-xs text-red-500 dark:text-red-400'>{error}</p>}
     </div>
