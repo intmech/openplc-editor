@@ -137,6 +137,13 @@ const EtherCATEditor = () => {
     },
     [handleUpdateMasterConfig],
   )
+  // Sync local state when masterConfig loads/changes (e.g. after project open)
+  useEffect(() => {
+    if (masterConfig.networkInterface) {
+      _setSelectedInterface(masterConfig.networkInterface)
+    }
+  }, [masterConfig.networkInterface])
+
   const [isLoadingInterfaces, setIsLoadingInterfaces] = useState(false)
   const [interfaceError, setInterfaceError] = useState<string | null>(null)
 
@@ -321,7 +328,6 @@ const EtherCATEditor = () => {
       setServiceAvailable(null)
       setInterfaces([])
       setScannedDevices([])
-      setSelectedInterface('')
     }
   }, [isConnectedToRuntime, checkServiceStatus, fetchInterfaces])
 
