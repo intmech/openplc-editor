@@ -198,13 +198,13 @@ const ScanBusTab = ({
 
             {/* Device table */}
             <div className='flex-1 overflow-auto rounded-lg border border-neutral-200 dark:border-neutral-800'>
-              <table className='w-full table-fixed'>
+              <table className='w-full'>
                 <thead className='sticky top-0 bg-neutral-100 dark:bg-neutral-900'>
                   <tr>
-                    <th className='w-[8%] px-2 py-2 text-left text-xs font-medium text-neutral-700 dark:text-neutral-300'>
+                    <th className='px-2 py-2 text-left text-xs font-medium text-neutral-700 dark:text-neutral-300'>
                       Pos
                     </th>
-                    <th className='w-[25%] px-2 py-2 text-left text-xs font-medium text-neutral-700 dark:text-neutral-300'>
+                    <th className='px-2 py-2 text-left text-xs font-medium text-neutral-700 dark:text-neutral-300'>
                       Name
                     </th>
                     <th className='px-2 py-2 text-left text-xs font-medium text-neutral-700 dark:text-neutral-300'>
@@ -239,16 +239,10 @@ const ScanBusTab = ({
                           <td className='px-2 py-2 text-sm font-medium text-neutral-700 dark:text-neutral-300'>
                             {device.position ?? '-'}
                           </td>
-                          <td
-                            className='truncate px-2 py-2 text-sm font-medium text-neutral-950 dark:text-neutral-100'
-                            title={device.name}
-                          >
+                          <td className='whitespace-nowrap px-2 py-2 text-sm font-medium text-neutral-950 dark:text-neutral-100'>
                             {device.name}
                           </td>
-                          <td
-                            className='truncate px-2 py-2 text-xs text-neutral-600 dark:text-neutral-400'
-                            title={esiDevice?.name}
-                          >
+                          <td className='px-2 py-2 text-xs text-neutral-600 dark:text-neutral-400'>
                             {esiDevice?.name || 'Unknown'}
                           </td>
                         </tr>

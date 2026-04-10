@@ -394,7 +394,7 @@ const EtherCATEditor = () => {
       newDevices.push({
         id: uuidv4(),
         position: match.device.position,
-        name: match.device.name,
+        name: bestMatch.esiDevice.name || match.device.name,
         esiDeviceRef: {
           repositoryItemId: bestMatch.repositoryItemId,
           deviceIndex: bestMatch.deviceIndex,
