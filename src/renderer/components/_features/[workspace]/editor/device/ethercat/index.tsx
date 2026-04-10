@@ -61,8 +61,15 @@ const TabItem = ({
  * EtherCATDeviceEditor, opened from the project tree.
  */
 const EtherCATEditor = () => {
-  const { editor, runtimeConnection, project, projectActions, workspaceActions, sharedWorkspaceActions } =
-    useOpenPLCStore()
+  const {
+    editor,
+    runtimeConnection,
+    project,
+    projectActions,
+    workspaceActions,
+    sharedWorkspaceActions,
+    editorActions,
+  } = useOpenPLCStore()
 
   const deviceName = editor.type === 'plc-remote-device' ? editor.meta.name : ''
   const projectPath = project.meta.path
@@ -445,10 +452,11 @@ const EtherCATEditor = () => {
       const device = configuredDevices.find((d) => d.id === deviceId)
       if (device) {
         sharedWorkspaceActions.forceCloseFile(device.name)
+        editorActions.removeModel(device.name)
       }
       syncDevicesToStore(configuredDevices.filter((d) => d.id !== deviceId))
     },
-    [configuredDevices, syncDevicesToStore, sharedWorkspaceActions],
+    [configuredDevices, syncDevicesToStore, sharedWorkspaceActions, editorActions],
   )
 
   return (
