@@ -299,19 +299,6 @@ const EtherCATDeviceEditor = () => {
                   </div>
                 </>
               )}
-              <div className='flex flex-col gap-0.5'>
-                <span className='font-medium text-neutral-500 dark:text-neutral-400'>Source</span>
-                <span
-                  className={cn(
-                    'inline-block w-fit rounded px-1.5 py-0.5 text-xs font-medium',
-                    device.addedFrom === 'scan'
-                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                      : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-                  )}
-                >
-                  {device.addedFrom === 'scan' ? 'Scan' : 'Manual'}
-                </span>
-              </div>
             </div>
           </div>
         </Tabs.Content>

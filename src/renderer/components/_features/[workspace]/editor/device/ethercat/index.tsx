@@ -11,7 +11,7 @@ import type {
 import type { EtherCATMasterConfig } from '@root/types/PLC/open-plc'
 import { cn } from '@root/utils'
 import { createDefaultSlaveConfig } from '@root/utils/ethercat/device-config-defaults'
-import { countMatchedDevices, getBestMatchQuality, matchDevicesToRepository } from '@root/utils/ethercat/device-matcher'
+import { getBestMatchQuality, matchDevicesToRepository } from '@root/utils/ethercat/device-matcher'
 import { enrichDeviceData } from '@root/utils/ethercat/enrich-device-data'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid'
@@ -165,8 +165,6 @@ const EtherCATEditor = () => {
   const deviceMatches = useMemo<ScannedDeviceMatch[]>(() => {
     return matchDevicesToRepository(scannedDevices, repository)
   }, [scannedDevices, repository])
-
-  const matchCounts = useMemo(() => countMatchedDevices(deviceMatches), [deviceMatches])
 
   // Check EtherCAT service status
   const checkServiceStatus = useCallback(async () => {
@@ -534,7 +532,6 @@ const EtherCATEditor = () => {
             scannedDevices={scannedDevices}
             onScan={() => void scanDevices()}
             deviceMatches={deviceMatches}
-            matchCounts={matchCounts}
             selectedScannedDevices={selectedScannedDevices}
             onSelectScannedDevice={handleSelectScannedDevice}
             onSelectAllScanned={handleSelectAllScanned}
