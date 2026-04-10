@@ -54,7 +54,7 @@ export function useDeviceConfiguration({
   onEnrichDeviceRef.current = onEnrichDevice
 
   useEffect(() => {
-    if (!enabled || fullDeviceLoadedRef.current) return
+    if (!enabled || !device || fullDeviceLoadedRef.current) return
 
     const loadFullDevice = async () => {
       setIsLoadingChannels(true)
@@ -100,24 +100,26 @@ export function useDeviceConfiguration({
     }
 
     void loadFullDevice()
-  }, [enabled, projectPath, device.esiDeviceRef.repositoryItemId, device.esiDeviceRef.deviceIndex])
+  }, [enabled, projectPath, device?.esiDeviceRef?.repositoryItemId, device?.esiDeviceRef?.deviceIndex])
 
   const handleAliasChange = useCallback(
     (channelId: string, alias: string) => {
+      if (!device) return
       const updated = device.channelMappings.map((m) => (m.channelId === channelId ? { ...m, alias } : m))
       onUpdateChannelMappingsRef.current(updated)
     },
-    [device.channelMappings],
+    [device?.channelMappings],
   )
 
   const updateConfig = useCallback(
     <K extends keyof EtherCATSlaveConfig>(section: K, updates: Partial<EtherCATSlaveConfig[K]>) => {
+      if (!device) return
       onUpdateDeviceRef.current({
         ...device.config,
         [section]: { ...device.config[section], ...updates },
       })
     },
-    [device.config],
+    [device?.config],
   )
 
   return {

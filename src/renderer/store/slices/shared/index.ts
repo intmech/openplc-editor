@@ -1070,8 +1070,9 @@ export const createSharedSlice: StateCreator<
         getState().editorActions.removeModel(childTab.name)
       }
 
-      // Use forceCloseFile to properly select the next tab and reset editor state
+      // Close the bus tab and remove its cached editor model
       getState().sharedWorkspaceActions.forceCloseFile(data.file)
+      getState().editorActions.removeModel(data.file)
 
       const selectedProjectTreeLeaf = getState().workspace.selectedProjectTreeLeaf
       if (selectedProjectTreeLeaf.label === data.file) {

@@ -3,6 +3,8 @@ import { useOpenPLCStore } from '@root/renderer/store'
 import type { EtherCATDevice, NetworkInterface } from '@root/types/ethercat'
 import type {
   ConfiguredEtherCATDevice,
+  ESIDeviceRef,
+  ESIDeviceSummary,
   ESIRepositoryItemLight,
   ScannedDeviceMatch,
 } from '@root/types/ethercat/esi-types'
@@ -59,7 +61,8 @@ const TabItem = ({
  * EtherCATDeviceEditor, opened from the project tree.
  */
 const EtherCATEditor = () => {
-  const { editor, runtimeConnection, project, projectActions, workspaceActions } = useOpenPLCStore()
+  const { editor, runtimeConnection, project, projectActions, workspaceActions, sharedWorkspaceActions } =
+    useOpenPLCStore()
 
   const deviceName = editor.type === 'plc-remote-device' ? editor.meta.name : ''
   const projectPath = project.meta.path
@@ -407,6 +410,47 @@ const EtherCATEditor = () => {
     setRepositoryLoadRetry((c) => c + 1)
   }, [])
 
+  const handleAddDeviceFromBrowser = useCallback(
+    async (ref: ESIDeviceRef, device: ESIDeviceSummary, repoItem: ESIRepositoryItemLight) => {
+      let enriched = {}
+      const result = await window.bridge.esiLoadDeviceFull(projectPath, ref.repositoryItemId, ref.deviceIndex)
+      if (result.success && result.device) {
+        enriched = enrichDeviceData(result.device)
+      }
+
+      const nextPosition =
+        configuredDevices.length > 0 ? Math.max(...configuredDevices.map((d) => d.position ?? 0)) + 1 : 0
+
+      const newDevice: ConfiguredEtherCATDevice = {
+        id: uuidv4(),
+        position: nextPosition,
+        name: device.name,
+        esiDeviceRef: ref,
+        vendorId: repoItem.vendor.id,
+        productCode: device.type.productCode,
+        revisionNo: device.type.revisionNo,
+        addedFrom: 'repository',
+        config: createDefaultSlaveConfig(),
+        channelMappings: [],
+        ...enriched,
+      }
+
+      syncDevicesToStore([...configuredDevices, newDevice])
+    },
+    [configuredDevices, syncDevicesToStore, projectPath],
+  )
+
+  const handleRemoveDevice = useCallback(
+    (deviceId: string) => {
+      const device = configuredDevices.find((d) => d.id === deviceId)
+      if (device) {
+        sharedWorkspaceActions.forceCloseFile(device.name)
+      }
+      syncDevicesToStore(configuredDevices.filter((d) => d.id !== deviceId))
+    },
+    [configuredDevices, syncDevicesToStore, sharedWorkspaceActions],
+  )
+
   return (
     <div aria-label='EtherCAT editor container' className='flex h-full w-full flex-col overflow-hidden p-4'>
       {/* Header */}
@@ -476,6 +520,10 @@ const EtherCATEditor = () => {
             onSelectScannedDevice={handleSelectScannedDevice}
             onSelectAllScanned={handleSelectAllScanned}
             onAddSelectedFromScan={() => void handleAddSelectedFromScan()}
+            configuredDevices={configuredDevices}
+            repository={repository}
+            onAddDeviceFromBrowser={(...args) => void handleAddDeviceFromBrowser(...args)}
+            onRemoveDevice={handleRemoveDevice}
           />
         </Tabs.Content>
 
