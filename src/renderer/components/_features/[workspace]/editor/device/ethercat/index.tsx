@@ -129,7 +129,7 @@ const EtherCATEditor = () => {
 
   // Network interfaces state
   const [interfaces, setInterfaces] = useState<NetworkInterface[]>([])
-  const [selectedInterface, _setSelectedInterface] = useState<string>('')
+  const [selectedInterface, _setSelectedInterface] = useState<string>(masterConfig.networkInterface || '')
   const setSelectedInterface = useCallback(
     (value: string) => {
       _setSelectedInterface(value)
@@ -426,7 +426,7 @@ const EtherCATEditor = () => {
       }
 
       const nextPosition =
-        configuredDevices.length > 0 ? Math.max(...configuredDevices.map((d) => d.position ?? 0)) + 1 : 0
+        configuredDevices.length > 0 ? Math.max(...configuredDevices.map((d) => d.position ?? 0)) + 1 : 1
 
       const newDevice: ConfiguredEtherCATDevice = {
         id: uuidv4(),
@@ -451,8 +451,14 @@ const EtherCATEditor = () => {
     (deviceId: string) => {
       const device = configuredDevices.find((d) => d.id === deviceId)
       if (device) {
-        sharedWorkspaceActions.forceCloseFile(device.name)
+        // Remove cached editor model to avoid stale deviceId on re-add
         editorActions.removeModel(device.name)
+        // Close the device tab only if it's open (without switching away from current tab)
+        const { tabs, tabsActions } = useOpenPLCStore.getState()
+        const hasTab = tabs.some((t) => t.name === device.name)
+        if (hasTab) {
+          tabsActions.removeTab(device.name)
+        }
       }
       syncDevicesToStore(configuredDevices.filter((d) => d.id !== deviceId))
     },

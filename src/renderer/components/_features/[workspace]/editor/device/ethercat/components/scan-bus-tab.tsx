@@ -157,108 +157,116 @@ const ScanBusTab = ({
           </div>
         )}
 
-        {/* Discovered Devices Table */}
-        <DiscoveredDeviceTable
-          deviceMatches={deviceMatches}
-          selectedDevices={selectedScannedDevices}
-          onSelectDevice={onSelectScannedDevice}
-          onSelectAll={onSelectAllScanned}
-          isScanning={isScanning}
-        />
+        {/* Side-by-side: Scanned Devices (left) + Configured Devices (right) */}
+        <div className='flex min-h-0 flex-1 gap-4'>
+          {/* Scanned Devices — left */}
+          <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
+            <DiscoveredDeviceTable
+              deviceMatches={deviceMatches}
+              selectedDevices={selectedScannedDevices}
+              onSelectDevice={onSelectScannedDevice}
+              onSelectAll={onSelectAllScanned}
+              isScanning={isScanning}
+            />
+          </div>
 
-        {/* Configured Devices header with +/- actions */}
-        <div className='mb-2 mt-4 flex items-center justify-between'>
-          <h3 className='text-sm font-medium text-neutral-950 dark:text-neutral-100'>
-            Configured Devices
-            {configuredDevices.length > 0 && (
-              <span className='ml-1 font-normal text-neutral-500'>({configuredDevices.length})</span>
-            )}
-          </h3>
-          <TableActions
-            actions={[
-              {
-                ariaLabel: 'Add Device',
-                onClick: () => setIsDeviceBrowserOpen(true),
-                icon: <PlusIcon className='h-4 w-4 stroke-brand' />,
-                id: 'add-ethercat-device-button',
-              },
-              {
-                ariaLabel: 'Remove Device',
-                onClick: () => {
-                  if (selectedDeviceId) {
-                    onRemoveDevice(selectedDeviceId)
-                    setSelectedDeviceId(null)
-                  }
-                },
-                disabled: !selectedDeviceId,
-                icon: <MinusIcon className='h-4 w-4 stroke-brand' />,
-                id: 'remove-ethercat-device-button',
-              },
-            ]}
-            buttonProps={{
-              className:
-                'rounded-md p-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed',
-            }}
-          />
-        </div>
-
-        {/* Configured Devices list */}
-        <div className='flex-1 overflow-auto rounded-lg border border-neutral-200 dark:border-neutral-800'>
-          {configuredDevices.length === 0 ? (
-            <div className='flex h-full items-center justify-center p-4'>
-              <p className='text-center text-xs text-neutral-500 dark:text-neutral-400'>
-                No devices configured. Click + to add a device from the repository.
-              </p>
+          {/* Configured Devices — right */}
+          <div className='flex min-w-0 flex-1 flex-col overflow-hidden'>
+            {/* Header with +/- actions */}
+            <div className='mb-2 flex items-center justify-between'>
+              <h3 className='text-sm font-medium text-neutral-950 dark:text-neutral-100'>
+                Configured Devices
+                {configuredDevices.length > 0 && (
+                  <span className='ml-1 font-normal text-neutral-500'>({configuredDevices.length})</span>
+                )}
+              </h3>
+              <TableActions
+                actions={[
+                  {
+                    ariaLabel: 'Add Device',
+                    onClick: () => setIsDeviceBrowserOpen(true),
+                    icon: <PlusIcon className='h-4 w-4 stroke-brand' />,
+                    id: 'add-ethercat-device-button',
+                  },
+                  {
+                    ariaLabel: 'Remove Device',
+                    onClick: () => {
+                      if (selectedDeviceId) {
+                        onRemoveDevice(selectedDeviceId)
+                        setSelectedDeviceId(null)
+                      }
+                    },
+                    disabled: !selectedDeviceId,
+                    icon: <MinusIcon className='h-4 w-4 stroke-brand' />,
+                    id: 'remove-ethercat-device-button',
+                  },
+                ]}
+                buttonProps={{
+                  className:
+                    'rounded-md p-1 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-50 disabled:cursor-not-allowed',
+                }}
+              />
             </div>
-          ) : (
-            configuredDevices.map((device) => {
-              const repoItem = repository.find((r) => r.id === device.esiDeviceRef.repositoryItemId)
-              const esiDevice = repoItem?.devices[device.esiDeviceRef.deviceIndex]
-              const isActive = device.id === selectedDeviceId
 
-              return (
-                <button
-                  key={device.id}
-                  onClick={() => setSelectedDeviceId(device.id === selectedDeviceId ? null : device.id)}
-                  className={cn(
-                    'flex w-full items-center gap-3 border-b border-neutral-100 px-3 py-2 text-left transition-colors dark:border-neutral-800',
-                    isActive ? 'bg-brand/10 dark:bg-brand/20' : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50',
-                  )}
-                >
-                  <div className='min-w-0 flex-1'>
-                    <div className='flex items-center gap-2'>
-                      <span
-                        className={cn(
-                          'text-xs font-medium',
-                          isActive
-                            ? 'text-brand-medium dark:text-brand-light'
-                            : 'text-neutral-950 dark:text-neutral-100',
-                        )}
-                      >
-                        {device.name}
+            {/* Device list */}
+            <div className='flex-1 overflow-auto rounded-lg border border-neutral-200 dark:border-neutral-800'>
+              {configuredDevices.length === 0 ? (
+                <div className='flex h-full items-center justify-center p-4'>
+                  <p className='text-center text-xs text-neutral-500 dark:text-neutral-400'>
+                    No devices configured. Click + to add a device from the repository.
+                  </p>
+                </div>
+              ) : (
+                configuredDevices.map((device) => {
+                  const repoItem = repository.find((r) => r.id === device.esiDeviceRef.repositoryItemId)
+                  const esiDevice = repoItem?.devices[device.esiDeviceRef.deviceIndex]
+                  const isActive = device.id === selectedDeviceId
+
+                  return (
+                    <button
+                      key={device.id}
+                      onClick={() => setSelectedDeviceId(device.id === selectedDeviceId ? null : device.id)}
+                      className={cn(
+                        'flex w-full items-center gap-3 border-b border-neutral-100 px-3 py-2 text-left transition-colors dark:border-neutral-800',
+                        isActive ? 'bg-brand/10 dark:bg-brand/20' : 'hover:bg-neutral-50 dark:hover:bg-neutral-800/50',
+                      )}
+                    >
+                      <div className='min-w-0 flex-1'>
+                        <div className='flex items-center gap-2'>
+                          <span
+                            className={cn(
+                              'text-xs font-medium',
+                              isActive
+                                ? 'text-brand-medium dark:text-brand-light'
+                                : 'text-neutral-950 dark:text-neutral-100',
+                            )}
+                          >
+                            {device.name}
+                          </span>
+                          <span
+                            className={cn(
+                              'inline-block rounded px-1 py-0.5 text-[10px] font-medium',
+                              device.addedFrom === 'scan'
+                                ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                                : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                            )}
+                          >
+                            {device.addedFrom === 'scan' ? 'Scan' : 'Manual'}
+                          </span>
+                        </div>
+                        <span className='text-[10px] text-neutral-500 dark:text-neutral-400'>
+                          {esiDevice?.name || 'Unknown type'}
+                        </span>
+                      </div>
+                      <span className='text-[10px] text-neutral-400 dark:text-neutral-500'>
+                        Pos: {device.position ?? '-'}
                       </span>
-                      <span
-                        className={cn(
-                          'inline-block rounded px-1 py-0.5 text-[10px] font-medium',
-                          device.addedFrom === 'scan'
-                            ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                            : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
-                        )}
-                      >
-                        {device.addedFrom === 'scan' ? 'Scan' : 'Manual'}
-                      </span>
-                    </div>
-                    <span className='text-[10px] text-neutral-500 dark:text-neutral-400'>
-                      {esiDevice?.name || 'Unknown type'}
-                    </span>
-                  </div>
-                  <span className='text-[10px] text-neutral-400 dark:text-neutral-500'>
-                    Pos: {device.position ?? '-'}
-                  </span>
-                </button>
-              )
-            })
-          )}
+                    </button>
+                  )
+                })
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
