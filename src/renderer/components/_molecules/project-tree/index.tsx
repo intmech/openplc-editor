@@ -318,7 +318,7 @@ const ProjectTreeExpandableLeaf = ({
     <li className='cursor-default' {...res}>
       <div
         className={cn(
-          'group flex cursor-pointer flex-row items-center py-1 pl-[44px] hover:bg-slate-50 dark:hover:bg-neutral-900',
+          'group flex cursor-pointer flex-row items-center py-1 pl-[36px] hover:bg-slate-50 dark:hover:bg-neutral-900',
           name === label && 'bg-slate-50 dark:bg-neutral-900',
         )}
       >
@@ -415,7 +415,7 @@ const ProjectTreeExpandableLeaf = ({
         </Popover.Root>
       </div>
 
-      {children && isExpanded && <ul className='list-none p-0'>{children}</ul>}
+      {children && isExpanded && <ul className='list-none p-0 pl-4'>{children}</ul>}
     </li>
   )
 }
